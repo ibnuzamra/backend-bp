@@ -5,12 +5,6 @@ node {
         git credentialsId: 'GITHUB_CREDENTIALS', url: 'https://github.com/ibnuzamra/backend-bp'
     }
 
-#     stage('NPM Build') {
-#
-#       sh 'npm install --silent'
-#
-#    }
-
     stage("Docker build"){
         sh 'docker version'
         sh 'docker build -t backend-prd .'
