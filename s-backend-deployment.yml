@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+  namespace: staging
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - name: backend-prod
+          image: ibnuzamra/backend-stg:versi
+          ports:
+            - containerPort: 4000
+          resources:
+            limits:
+              cpu: 600m
+              memory: 768Mi
+            requests:
+              cpu: 200m
+              memory: 384Mi
+  selector:
+    matchLabels:
+      app: server

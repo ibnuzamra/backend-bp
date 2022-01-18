@@ -22,17 +22,32 @@ pipeline {
           script {
             if ( env.GIT_BRANCH == 'staging' ){
               sh "docker image build . -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
-              sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
+              sh "docker tag $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER} $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
+              //sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
               echo "Docker Image ${BUILD_NUMBER} Build For Server Staging ${currentBuild.currentResult}"
             }  
             else if ( env.GIT_BRANCH == 'main' ){
               sh "docker image build . -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
-              sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
+              sh "docker tag $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER} $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
+              //sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
               echo "Docker Image ${BUILD_NUMBER} Build For Server Production ${currentBuild.currentResult}"
             }
           }  
         }
       }
+    
+      stage('Push Docker Image') {
+            steps {
+                script {
+                 withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
+                    sh 'docker login -u ibnuzamra -p ${dockerhubpwd}'
+                 }
+                 //sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
+                 sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
+                }
+            }
+      }
+    
       stage('Docker Image Delete'){
         steps{
           script {
@@ -47,6 +62,7 @@ pipeline {
           }  
         }
       }
+    
       stage('Deploy TO K8S'){
         steps{
           script {
