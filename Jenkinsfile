@@ -12,7 +12,7 @@ pipeline {
           echo "Deployment TO ${env.GIT_BRANCH}"
           script {   env.DOCKER_REGISTRY = 'ibnuzamra'
                      env.DOCKER_IMAGE_NAME = 'backend'
-                     #Change env DOCKER_IMAGE_APPS
+                     //#Change env DOCKER_IMAGE_APPS
                      env.DOCKER_IMAGE_APPS = 'backend'
           }
         }
