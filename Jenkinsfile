@@ -51,7 +51,7 @@ pipeline {
         steps{
           script {
             if ( env.GIT_BRANCH == 'staging' ){
-              #Change url wget
+              //#Change url wget
               sh 'wget https://raw.githubusercontent.com/ibnuzamra/backend-bp/main/s-backend-deployment.yml'
               sh 'sed -i "s/versi/$BUILD_NUMBER/g" "${DOCKER_IMAGE_APPS}"-staging-deploy.yaml'
               sh 'kubectl apply -f "${DOCKER_IMAGE_APPS}"-staging-deploy.yaml'
@@ -59,7 +59,7 @@ pipeline {
               echo "Deploy ${BUILD_NUMBER} To Server Staging ${currentBuild.currentResult}"
             }
             else if ( env.GIT_BRANCH == 'main' ){
-              #Change url wget
+              //#Change url wget
               sh 'wget https://raw.githubusercontent.com/ibnuzamra/backend-bp/main/p-backend-deployment.yml'
               sh 'sed -i "s/versi/$BUILD_NUMBER/g" "${DOCKER_IMAGE_APPS}"-production-deploy.yaml'
               sh 'kubectl apply -f "${DOCKER_IMAGE_APPS}"-production-deploy.yaml'
