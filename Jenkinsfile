@@ -93,7 +93,7 @@ pipeline {
               echo "DEPLOY NUMBER ${BUILD_NUMBER} TO SERVER STAGING ${currentBuild.currentResult}"  
             }
             else if ( env.GIT_BRANCH == 'main' ){
-              echo "DEPLOY NUMBER ${BUILD_NUMBER} TO SERVER STAGING ${currentBuild.currentResult}"
+              echo "DEPLOY NUMBER ${BUILD_NUMBER} TO SERVER PRODUCTION ${currentBuild.currentResult}"
             }
           }  
         }
