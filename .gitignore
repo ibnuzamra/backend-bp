@@ -5,7 +5,6 @@
 /.pnp
 .pnp.js
 Jenkinsfile.bak
-Jenkinsfile.ori
 
 # testing
 /coverage
