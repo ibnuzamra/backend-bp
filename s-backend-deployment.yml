@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-prod
-  namespace: production
+  name: server-deployment
+  namespace: staging
 spec:
-  replicas: 3
+  replicas: 1
   template:
     metadata:
       labels:
-        app: backend-prod
+        app: server
     spec:
       containers:
         - name: backend-prod
-          image: ibnuzamra/backend-prd:versi
+          image: ibnuzamra/backend-stg:versi
           ports:
             - containerPort: 4000
           resources:
@@ -24,4 +24,4 @@ spec:
               memory: 384Mi
   selector:
     matchLabels:
-      app: backend-prod
+      app: server

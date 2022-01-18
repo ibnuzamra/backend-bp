@@ -1,46 +1,89 @@
-pipeline{
-    agent any
-    stages {
-        stage('Build Backend') {
-            steps{
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: '1', url: 'https://github.com/ibnuzamra/backend-bp.git']]])
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                script {
-                  sh 'docker build -t ibnuzamra/backend-prd:latest .'
-                }
-            }
-        }
-        stage('Push Docker Image') {
-            steps {
-                script {
-                 withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
-                    sh 'docker login -u ibnuzamra -p ${dockerhubpwd}'
-                 }  
-                 sh 'docker push ibnuzamra/backend-prd:latest'
-                }
-            }
-        }
-    
-    stage('Deploy App on k8s') {
-      steps {
-            sshagent(['cilist-cluster']) {
-            sh "rsync -chavzP p-backend-deployment.yml ubuntu@13.250.114.157:/home/ubuntu/"
-            script {
-                sh "ssh ubuntu@13.250.114.157 kubectl delete -f p-backend-deployment.yml"
-            }
-            script {
-                try{
-                    sh "ssh ubuntu@13.250.114.157 kubectl create -f p-backend-deployment.yml"
-                }catch(error){
-                    sh "ssh ubuntu@13.250.114.157 kubectl create -f p-backend-deployment.yml"
-                }
-            }
-}
-        }
+pipeline {
+  agent any 
+  triggers {
+        pollSCM(env.GIT_BRANCH == 'main' ? '* * * * *' : env.GIT_BRANCH == 'staging' ? '* * * * *' : '')
     }
-    
+  stages {
+      stage('Checkout SCM') {
+        steps{
+          checkout scm
+          sh "ls"
+          sh "git --version"
+          echo "Deployment TO ${env.GIT_BRANCH}"
+          script {   env.DOCKER_REGISTRY = 'ibnuzamra'
+                     env.DOCKER_IMAGE_NAME = 'backend'
+                     #Change env DOCKER_IMAGE_APPS
+                     env.DOCKER_IMAGE_APPS = 'backend'
+          }
+        }
+      }
+      stage('Build Docker Image') {
+        steps{
+          script {
+            if ( env.GIT_BRANCH == 'staging' ){
+              sh "docker image build . -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
+              sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
+              echo "Docker Image ${BUILD_NUMBER} Build For Server Staging ${currentBuild.currentResult}"
+            }  
+            else if ( env.GIT_BRANCH == 'main' ){
+              sh "docker image build . -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
+              sh "docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
+              echo "Docker Image ${BUILD_NUMBER} Build For Server Production ${currentBuild.currentResult}"
+            }
+          }  
+        }
+      }
+      stage('Docker Image Delete'){
+        steps{
+          script {
+            if ( env.GIT_BRANCH == 'staging' ){
+              sh "docker image rm -f $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
+              echo "Docker Image ${BUILD_NUMBER} Delete For Server Staging ${currentBuild.currentResult}"
+            }
+            else if ( env.GIT_BRANCH == 'main' ){
+              sh "docker image rm -f $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-prd:${BUILD_NUMBER}"
+              echo "Docker Image ${BUILD_NUMBER} Delete For Server Production ${currentBuild.currentResult}"
+            }
+          }  
+        }
+      }
+      stage('Deploy TO K8S'){
+        steps{
+          script {
+            if ( env.GIT_BRANCH == 'staging' ){
+              #Change url wget
+              sh 'wget https://raw.githubusercontent.com/ibnuzamra/backend-bp/main/s-backend-deployment.yml'
+              sh 'sed -i "s/versi/$BUILD_NUMBER/g" "${DOCKER_IMAGE_APPS}"-staging-deploy.yaml'
+              sh 'kubectl apply -f "${DOCKER_IMAGE_APPS}"-staging-deploy.yaml'
+              sh 'rm -rf *'
+              echo "Deploy ${BUILD_NUMBER} To Server Staging ${currentBuild.currentResult}"
+            }
+            else if ( env.GIT_BRANCH == 'main' ){
+              #Change url wget
+              sh 'wget https://raw.githubusercontent.com/ibnuzamra/backend-bp/main/p-backend-deployment.yml'
+              sh 'sed -i "s/versi/$BUILD_NUMBER/g" "${DOCKER_IMAGE_APPS}"-production-deploy.yaml'
+              sh 'kubectl apply -f "${DOCKER_IMAGE_APPS}"-production-deploy.yaml'
+              sh 'rm -rf *'
+              echo "Deploy ${BUILD_NUMBER} To Server Production ${currentBuild.currentResult}"
+            }
+          }  
+        }
+      }
     }
+  post {
+        always {
+          script {
+            if ( env.GIT_BRANCH == 'staging' ){
+              echo "DEPLOY NUMBER ${BUILD_NUMBER} TO SERVER STAGING ${currentBuild.currentResult}"
+              slackSend message: "DEPLOY ${DOCKER_IMAGE_APPS} NUMBER ${BUILD_NUMBER} TO SERVER STAGING ${currentBuild.currentResult}"
+
+            }
+            else if ( env.GIT_BRANCH == 'main' ){
+              echo "DEPLOY NUMBER ${BUILD_NUMBER} TO SERVER STAGING ${currentBuild.currentResult}"
+              slackSend message: "DEPLOY ${DOCKER_IMAGE_APPS} NUMBER ${BUILD_NUMBER} TO SERVER PRODUCTION ${currentBuild.currentResult}"
+            }
+          }  
+        }
+  }  
 }
+
