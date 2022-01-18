@@ -20,7 +20,6 @@ pipeline {
       stage('Build Docker Image') {
         steps{
           script {
-            withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')])
             if ( env.GIT_BRANCH == 'staging' ){
               sh "docker image build . -t $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
               sh "docker tag $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER} $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME-stg:${BUILD_NUMBER}"
