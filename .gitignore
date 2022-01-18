@@ -6,7 +6,6 @@
 .pnp.js
 Jenkinsfile.bak
 Jenkinsfile.ori
-p-backend-deployment.yml
 
 # testing
 /coverage
